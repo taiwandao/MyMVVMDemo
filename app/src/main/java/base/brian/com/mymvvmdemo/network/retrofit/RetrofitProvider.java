@@ -1,11 +1,17 @@
 package base.brian.com.mymvvmdemo.network.retrofit;
 
+import android.util.Log;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
@@ -39,14 +45,26 @@ public class RetrofitProvider {
 
     }
 
+    private final static String tag = RetrofitProvider.class.getSimpleName();
+    static Interceptor interceptor = new Interceptor() {
+        @Override
+        public Response intercept(Chain chain) throws IOException {
+            Request request = chain.request();
+            Response response = chain.proceed(request);
+//            Log.i(tag, String.format("response %s",response.body().string()));
+            return response;
+        }
+    };
+
     // 配置OkHttpClient
     private static void initOkHttpClient() {
         if (mOkHttpClient == null) {
             synchronized (RetrofitProvider.class) {
                 if (mOkHttpClient == null) {
                     HttpLoggingInterceptor log = new HttpLoggingInterceptor();
-                        log.setLevel(HttpLoggingInterceptor.Level.BODY);
+                    log.setLevel(HttpLoggingInterceptor.Level.BODY);
                     mOkHttpClient = new OkHttpClient.Builder().addInterceptor(log)
+                            .addInterceptor(interceptor)
                             .retryOnConnectionFailure(true)
                             .connectTimeout(30, TimeUnit.SECONDS).build();
                 }
